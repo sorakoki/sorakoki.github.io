@@ -1,0 +1,394 @@
+<<!DOCTYPE html>
+<html dir="ltr" lang="ja">
+<head>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TIME</title>
+<!-- ファビコンは、まず.ico形式をルートに配置して指定 -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<!-- PNG形式も補助的に指定。ファイルが無い場合この行は外してもOK -->
+<link rel="icon" type="image/png" sizes="192x192" href="/img/@.png">
+<!-- Apple端末用 -->
+<link rel="apple-touch-icon" sizes="180x180" href="/img/@.png">
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+
+  <meta name="google-site-verification" content="0Z-yYDc6Bsb2GaakFdsHwo8P85d8Dh7jU2AZe-Xz7KQ" /><style>
+    /* 右上に固定するアラーム時刻表示 */
+    #alarmTimeDisplay {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      min-width: 220px;
+      z-index: 1000;
+      background: #fff8dc;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 8px 16px;
+      font-size: 1.15em;
+      text-align: right;
+      color: #333;
+      border: 1px solid #ffe4b5;
+      display: none; /* 初期は非表示 */
+    }
+    /* アラーム起動時のメッセージとストップボタン用 */
+    #alarmActiveMsg {
+      margin-top: 12px;
+      font-size: 1.25em;
+      color: #2b7a78;
+      background: #def2f1;
+      border-radius: 6px;
+      padding: 8px 12px;
+      text-align: center;
+      font-weight: bold;
+    }
+    #stopButton {
+      display: block;
+      margin: 14px auto 0 auto;
+      font-size: 1.2em;
+      padding: 8px 28px;
+      background: #ff6f61;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    #clearAlarmButton {
+      position: fixed;
+      top: 60px;
+      right: 24px;
+      z-index: 1001;
+      font-size: 1.1em;
+      padding: 6px 20px;
+      background: #b2dfdb;
+      color: #333;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- スクロールテキスト -->
+  <div id="scroll-container">
+    <div id="scroll-text" style="margin-left: 40px;">&nbsp;</div>
+  </div>
+  <!-- PC用YouTube埋め込み -->
+<div class="pc-youtube">
+  <iframe
+    allowfullscreen
+    frameborder="0"
+    width="640" height="360"
+    src="https://www.youtube.com/embed/WTMxb1axoH0"
+  ></iframe>
+</div>
+
+<!-- モバイル用YouTube埋め込み -->
+<div class="mobile-youtube">
+  <div class="video-container">
+    <iframe
+      allowfullscreen
+      frameborder="0"
+      src="https://www.youtube.com/embed/WTMxb1axoH0"
+    ></iframe>
+  </div>
+</div>
+
+    </div>
+  </div>
+  <!-- 画像セクション -->
+  <div class="image-section">
+    <img alt="草原に立つトラ" src="./img/とら.jpeg" />
+    <img alt="竹を食べるパンダ" src="./img/パンダ" />
+    <img alt="水中を泳ぐイルカ" src="./img/イルカ.jpeg" />
+    <img alt="氷の上を歩くペンギン" src="./img/ペンギン" />
+  </div>
+  <!-- アラーム設定ボタン -->
+  <button id="alarmButton">アラーム設定</button>
+
+  <!-- アラーム時刻表示（右上） -->
+  <div id="alarmTimeDisplay"></div>
+
+  <!-- 解除/ストップボタン（右上、動的に切り替え） -->
+  <button id="clearAlarmButton">解除</button>
+
+  <audio id="alarmSound" preload="auto" src="abc-alphabet-song-274033.mp3"></audio>
+  <!-- ナンバーパッドのモーダル -->
+  <div class="numpad-modal" id="numpadModal" style="display:none;" tabindex="0">
+    <div class="numpad-container">
+      <div class="numpad-label">午前・午後を選択し、時刻を入力してください</div>
+      <div class="ampm-select">
+        <button class="ampm-btn" id="amBtn">午前</button>
+        <button class="ampm-btn" id="pmBtn">午後</button>
+      </div>
+      <div class="numpad-display" id="numpadDisplay">午前 12:00</div>
+      <div class="numpad-error" id="numpadError">&nbsp;</div>
+      <div class="numpad-keys">
+        <button class="num-btn">1</button>
+        <button class="num-btn">2</button>
+        <button class="num-btn">3</button>
+        <button class="num-btn">4</button>
+        <button class="num-btn">5</button>
+        <button class="num-btn">6</button>
+        <button class="num-btn">7</button>
+        <button class="num-btn">8</button>
+        <button class="num-btn">9</button>
+        <button class="num-btn">0</button>
+        <button class="num-btn" id="numpadClear">C</button>
+        <button class="num-btn" id="numpadOK">OK</button>
+      </div>
+    </div>
+  </div>
+  <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const scrollContainer = document.getElementById('scroll-container');
+    const scrollText = document.getElementById('scroll-text');
+    const alarmButton = document.getElementById('alarmButton');
+    const alarmTimeDisplay = document.getElementById('alarmTimeDisplay');
+    const alarmSound = document.getElementById('alarmSound');
+    const numpadModal = document.getElementById('numpadModal');
+    const numpadDisplay = document.getElementById('numpadDisplay');
+    const numpadError = document.getElementById('numpadError');
+    const numpadBtns = document.querySelectorAll('.num-btn');
+    const numpadOK = document.getElementById('numpadOK');
+    const numpadClear = document.getElementById('numpadClear');
+    const amBtn = document.getElementById('amBtn');
+    const pmBtn = document.getElementById('pmBtn');
+    const clearAlarmButton = document.getElementById('clearAlarmButton');
+
+    let timeInput = "";
+    let ampm = null;
+    let alarmTime = null;
+    let alarmTriggered = false;
+
+    const colors = { '日': 'orange', '月': 'yellow', '火': 'red', '水': 'blue', '木': 'brown', '金': 'gold', '土': 'green' };
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+
+    function getEraYear(year) {
+        if (year >= 2019) return `令和${year - 2018}`;
+        if (year >= 1989) return `平成${year - 1988}`;
+        if (year >= 1926) return `昭和${year - 1925}`;
+        return '';
+    }
+
+    function updateDateTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const date = now.getDate();
+        const weekday = weekdays[now.getDay()];
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const eraYear = getEraYear(year);
+
+        scrollText.innerHTML = `${year}年（${eraYear}年）${month}月${date}日（${weekday}） <span class="large-time">${hours}:${minutes}</span>`;
+        scrollContainer.style.backgroundColor = colors[weekday];
+    }
+
+    function animateScroll() {
+        const containerWidth = scrollContainer.offsetWidth;
+        let position = containerWidth;
+
+        function step() {
+            position--;
+            if (position < -scrollText.offsetWidth) {
+                position = containerWidth;
+            }
+            scrollText.style.transform = `translateX(${position}px)`;
+            requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    function openNumpad() {
+        timeInput = "";
+        updateNumpadDisplay();
+        numpadModal.style.display = "flex";
+        clearNumpadError();
+        numpadModal.focus();
+        amBtn.classList.remove('selected');
+        pmBtn.classList.remove('selected');
+        ampm = null;
+    }
+
+    amBtn.addEventListener('click', () => {
+        ampm = "AM";
+        amBtn.classList.add('selected');
+        pmBtn.classList.remove('selected');
+        updateNumpadDisplay();
+        clearNumpadError();
+    });
+    pmBtn.addEventListener('click', () => {
+        ampm = "PM";
+        pmBtn.classList.add('selected');
+        amBtn.classList.remove('selected');
+        updateNumpadDisplay();
+        clearNumpadError();
+    });
+
+    numpadModal.addEventListener('keydown', function(e) {
+        if (e.key === 'c' || e.key === 'C') {
+            timeInput = "";
+            updateNumpadDisplay();
+            clearNumpadError();
+            e.preventDefault();
+            return;
+        }
+        if (/^[0-9]$/.test(e.key)) {
+            timeInput = (timeInput + e.key).slice(-4);
+            updateNumpadDisplay();
+            clearNumpadError();
+            e.preventDefault();
+            return;
+        }
+        if (e.key === 'Enter') {
+            numpadOK.click();
+            e.preventDefault();
+            return;
+        }
+    });
+
+    numpadBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (btn === numpadOK || btn === numpadClear) return;
+            timeInput = (timeInput + btn.textContent).slice(-4);
+            updateNumpadDisplay();
+            clearNumpadError();
+        });
+    });
+
+    numpadClear.addEventListener('click', () => {
+        timeInput = "";
+        updateNumpadDisplay();
+        clearNumpadError();
+    });
+
+    function updateNumpadDisplay() {
+        let padded = timeInput.padStart(4, '0');
+        let hour = String(Number(padded.slice(0, 2)));
+        let min = padded.slice(2, 4);
+        let ampmStr = ampm === "AM" ? "午前" : ampm === "PM" ? "午後" : "午前";
+        numpadDisplay.textContent = `${ampmStr} ${hour}:${min}`;
+    }
+
+    function showNumpadError(msg) {
+        numpadError.textContent = msg;
+        numpadDisplay.classList.add('error');
+    }
+    function clearNumpadError() {
+        numpadError.textContent = '';
+        numpadDisplay.classList.remove('error');
+    }
+
+    numpadOK.addEventListener('click', () => {
+        clearNumpadError();
+        if (!ampm) {
+            showNumpadError("午前・午後を選択してください");
+            return;
+        }
+        let padded = timeInput.padStart(4, '0');
+        let hour = parseInt(padded.slice(0, 2), 10);
+        let min = parseInt(padded.slice(2, 4), 10);
+
+        if (isNaN(hour) || isNaN(min) || min < 0 || min > 59) {
+            showNumpadError("正しい時刻を入力してください");
+            return;
+        }
+        if (ampm === "AM" && (hour < 0 || hour > 11)) {
+            showNumpadError("午前は0～11時で入力してください");
+            return;
+        }
+        if (ampm === "PM" && (hour < 1 || hour > 12)) {
+            showNumpadError("午後は1～12時で入力してください");
+            return;
+        }
+
+        let hour24 = ampm === "AM" ? hour : hour === 12 ? 12 : hour + 12;
+
+        alarmTime = new Date();
+        alarmTime.setHours(hour24);
+        alarmTime.setMinutes(min);
+        alarmTime.setSeconds(0);
+        alarmTriggered = false;
+
+        // アラーム時刻表示を右上に
+        alarmTimeDisplay.style.display = 'block';
+        alarmTimeDisplay.innerHTML = `
+            <span class="alarm-time-large">
+                アラーム設定時刻：${ampm === "AM" ? "午前" : "午後"} ${hour}:${min.toString().padStart(2, '0')}
+            </span>
+            <div id="alarmActiveMsgContainer"></div>
+        `;
+        clearAlarmButton.style.display = 'block';
+        clearAlarmButton.textContent = '解除';
+        clearAlarmButton.disabled = false;
+        alert(`アラームを${ampm === "AM" ? "午前" : "午後"} ${hour}:${min.toString().padStart(2, '0')}に設定しました。`);
+        numpadModal.style.display = "none";
+    });
+
+    clearAlarmButton.addEventListener('click', () => {
+        if (!alarmTriggered) {
+            // 解除ボタンとして動作
+            alarmTime = null;
+            alarmTimeDisplay.style.display = 'none';
+            clearAlarmButton.style.display = 'none';
+            alarmSound.pause();
+            alarmSound.currentTime = 0;
+            alarmTriggered = false;
+        } else {
+            // ストップボタンとして動作
+            alarmSound.pause();
+            alarmSound.currentTime = 0;
+            alarmTime = null;
+            alarmTriggered = false;
+            alarmTimeDisplay.style.display = 'none';
+            clearAlarmButton.style.display = 'none';
+        }
+    });
+
+    numpadModal.addEventListener('click', function(e) {
+        if (e.target === numpadModal) numpadModal.style.display = "none";
+    });
+
+    function checkAlarm() {
+        if (alarmTime && !alarmTriggered) {
+            const now = new Date();
+            if (
+                now.getHours() === alarmTime.getHours() &&
+                now.getMinutes() === alarmTime.getMinutes() &&
+                now.getSeconds() === 0
+            ) {
+                alarmSound.currentTime = 0;
+                alarmSound.play();
+                alarmTriggered = true;
+
+                // アラーム時刻表示の下にメッセージとストップボタン
+                const alarmActiveMsgContainer = document.getElementById('alarmActiveMsgContainer');
+                if (alarmActiveMsgContainer) {
+                    alarmActiveMsgContainer.innerHTML = `
+                        <div id="alarmActiveMsg">
+                            アラーム時刻です！
+                        </div>
+                    `;
+                }
+                clearAlarmButton.textContent = 'ストップ';
+                clearAlarmButton.style.display = 'block';
+                clearAlarmButton.disabled = false;
+            }
+        }
+    }
+
+    alarmButton.addEventListener('click', openNumpad);
+    setInterval(checkAlarm, 1000);
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+    animateScroll();
+});
+  </script>
+</body>
+</html>

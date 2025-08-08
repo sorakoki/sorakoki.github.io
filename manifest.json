@@ -1,0 +1,61 @@
+{
+  "name": "TIME - 日本時計アラームアプリ",
+  "short_name": "TIME",
+  "description": "日本の元号と曜日色分け機能付きの時計・アラームアプリ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2b7a78",
+  "orientation": "any",
+  "scope": "./",
+  "lang": "ja",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "@.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "@.png",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "@.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "時計アプリのメイン画面（PC版）"
+    },
+    {
+      "src": "@.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "時計アプリのメイン画面（モバイル版）"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "アラーム設定",
+      "short_name": "アラーム",
+      "description": "アラーム時刻を設定する",
+      "url": "./index.html#alarm",
+      "icons": [
+        {
+          "src": "@.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "id": "time-clock-alarm-app"
+}
